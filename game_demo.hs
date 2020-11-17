@@ -6,8 +6,8 @@ import Graphics.Rendering.OpenGL (GLdouble)
 -------------
 -- Ventana --
 -------------
-width = 800
-height = 600
+width = 600
+height = 500
 w = fromIntegral width :: GLdouble
 h = fromIntegral height :: GLdouble
 winConfig = ((100,80),(width,height),"Pong")
@@ -79,8 +79,6 @@ input = [(SpecialKey KeyRight, StillDown, moveBarToRight),
 gameCycle :: IOGame GameAttribute () () () ()
 gameCycle = do
   (Score current high) <- getGameAttribute
-  printOnScreen ("Actual: " ++ show current) TimesRoman24 (5,5) 1.0 1.0 1.0
-  printOnScreen ("Mas alto: " ++ show high)    TimesRoman24 (5,h-15) 1.0 1.0 1.0
 
   ball <- findObject "ball" "ballGroup"
 
@@ -104,7 +102,9 @@ gameCycle = do
                             let new_current = current + 10
                             setGameAttribute (Score new_current (if new_current > high then new_current else high)))
 
-  showFPS TimesRoman24 (w-20,5) 1.0 1.0 1.0
+  printOnScreen ("Puntaje mas alto: " ++ show high)  Helvetica18 (5,h-15) 1.0 1.0 1.0
+  printOnScreen ("Puntaje actual:   " ++ show current) Helvetica18 (5,h-30) 1.0 1.0 1.0
+  showFPS Helvetica18 (w-20,5) 1.0 1.0 1.0
 
 ---------------------------
 -- otras configuraciones --
