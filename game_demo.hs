@@ -10,7 +10,7 @@ width = 600
 height = 500
 w = fromIntegral width :: GLdouble
 h = fromIntegral height :: GLdouble
-winConfig = ((100,80),(width,height),"Pong")
+winConfig = ((0,0),(width,height),"Pong")
 
 -----------------------------
 -- Definiciones de estados --
@@ -21,8 +21,8 @@ data GameAttribute = Score {current :: Int, high :: Int}
 -- Constantes --
 ---------------- 
 initSpeed = 2 :: GLdouble
+initPos   = (w/2,h/2)
 initScore = Score 0 0
-
 -------------
 -- Objetos --
 -------------
@@ -32,7 +32,7 @@ ball = objectGroup "ballGroup" [createBall]
 createBall :: GameObject () -- objectAttrib
 createBall =
   let ballPic = Basic (Circle 6.0 1 0.5 0.0 Filled)
-  in object "ball" ballPic False (w/2,h/2) (2,2) ()  -- name pic asleep pos speed objectAttrib
+  in object "ball" ballPic False initPos (2,2) ()  
 
 -- Bar
 bar = objectGroup "barGroup"  [createBar]
@@ -67,10 +67,6 @@ moveBarToLeft _ _ = do
 ---------------
 input = [(SpecialKey KeyRight, StillDown, moveBarToRight),
          (SpecialKey KeyLeft,  StillDown, moveBarToLeft),
-         (Char 'h' ,  StillDown, moveBarToLeft),
-         (Char 'l' ,  StillDown, moveBarToRight),
-         (Char 'k' ,  StillDown, moveBarToLeft),
-         (Char 'j' ,  StillDown, moveBarToRight),
          (Char 'q',   Press,     \_ _ -> funExit)]
 
 ---------------
@@ -92,23 +88,25 @@ gameCycle = do
   col4 <- objectBottomMapCollision ball
   when col4 $ do
     setGameAttribute (Score 0 high)
+    setObjectPosition initPos ball
     setObjectSpeed (initSpeed,initSpeed) ball
 
   bar <- findObject "bar" "barGroup"
   col5 <- objectsCollision ball bar
   let (_,vy) = getGameObjectSpeed ball
-  when (col5 && vy < 0) (do (x,y) <- getObjectSpeed ball
-                            setObjectSpeed (x*1.2,-y*1.2) ball
-                            let new_current = current + 10
-                            setGameAttribute (Score new_current (if new_current > high then new_current else high)))
+  when (col5 && vy < 0) $ do
+    (x,y) <- getObjectSpeed ball
+    setObjectSpeed (x*1.2,-y*1.2) ball
+    let new_current = current + 10
+    setGameAttribute (Score new_current (if new_current > high then new_current else high))
 
   printOnScreen ("Puntaje mas alto: " ++ show high)  Helvetica18 (5,h-15) 1.0 1.0 1.0
   printOnScreen ("Puntaje actual:   " ++ show current) Helvetica18 (5,h-30) 1.0 1.0 1.0
   showFPS Helvetica18 (w-20,5) 1.0 1.0 1.0
 
----------------------------
--- otras configuraciones --
----------------------------
+--------------------
+-- Fondo del mapa --
+--------------------
 bmpList = [("spacebg.bmp", Nothing)]
 gameMap = textureMap 0 200 200 w h -- el 0 hace referencia al primer elemento de bmpList
 
