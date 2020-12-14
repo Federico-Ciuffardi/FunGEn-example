@@ -20,7 +20,7 @@ data GameAttribute = Score {current :: Int, high :: Int}
 ---------------- 
 -- Constantes --
 ---------------- 
-initSpeed = 2 :: GLdouble
+initSpeed = (2,2) :: (GLdouble,GLdouble)
 initPos   = (w/2,h/2)
 initScore = Score 0 0
 -------------
@@ -32,7 +32,7 @@ ball = objectGroup "ballGroup" [createBall]
 createBall :: GameObject () -- objectAttrib
 createBall =
   let ballPic = Basic (Circle 6.0 1 0.5 0.0 Filled)
-  in object "ball" ballPic False initPos (2,2) ()  
+  in object "ball" ballPic False initPos initSpeed ()  
 
 -- Bar
 bar = objectGroup "barGroup"  [createBar]
@@ -43,31 +43,30 @@ createBar =
       barPic   = Basic (Polyg barBound 1.0 1.0 1.0 Filled)
   in object "bar" barPic False (w/2,30) (0,0) ()
 
-
-moveBarToRight :: Modifiers -> Position -> IOGame GameAttribute () () () ()
-moveBarToRight _ _ = do
-  obj     <- findObject "bar" "barGroup"
-  (pX,pY) <- getObjectPosition obj
-  (sX,_)  <- getObjectSize obj
-  if (pX + (sX/2) + 5 <= w)
-   then (setObjectPosition ((pX + 5),pY) obj)
-   else (setObjectPosition ((w - (sX/2)),pY) obj)
-
-moveBarToLeft :: Modifiers -> Position -> IOGame GameAttribute () () () ()
-moveBarToLeft _ _ = do
-  obj <- findObject "bar" "barGroup"
-  (pX,pY) <- getObjectPosition obj
-  (sX,_)  <- getObjectSize obj
-  if (pX - (sX/2) - 5 >= 0)
-    then (setObjectPosition ((pX - 5),pY) obj)
-    else (setObjectPosition (sX/2,pY) obj)
-
 ---------------
 -- Controles --
 ---------------
-input = [(SpecialKey KeyRight, StillDown, moveBarToRight),
-         (SpecialKey KeyLeft,  StillDown, moveBarToLeft),
-         (Char 'q',   Press,     \_ _ -> funExit)]
+input = [(SpecialKey KeyRight, StillDown , \_ _ -> moveBarToRight),
+         (SpecialKey KeyLeft , StillDown , \_ _ -> moveBarToLeft),
+         (Char 'q'           , Press     , \_ _ -> funExit)]
+
+moveBarToRight :: IOGame GameAttribute () () () ()
+moveBarToRight = do
+  bar     <- findObject "bar" "barGroup"
+  (pX,pY) <- getObjectPosition bar
+  (sX,_)  <- getObjectSize bar
+  if (pX + (sX/2) + 5 <= w)
+   then (setObjectPosition ((pX + 5),pY) bar)
+   else (setObjectPosition ((w - (sX/2)),pY) bar)
+
+moveBarToLeft :: IOGame GameAttribute () () () ()
+moveBarToLeft = do
+  bar <- findObject "bar" "barGroup"
+  (pX,pY) <- getObjectPosition bar
+  (sX,_)  <- getObjectSize bar
+  if (pX - (sX/2) - 5 >= 0)
+    then (setObjectPosition ((pX - 5),pY) bar)
+    else (setObjectPosition (sX/2,pY) bar)
 
 ---------------
 -- Main loop --
@@ -89,14 +88,13 @@ gameCycle = do
   when col4 $ do
     setGameAttribute (Score 0 high)
     setObjectPosition initPos ball
-    setObjectSpeed (initSpeed,initSpeed) ball
+    setObjectSpeed initSpeed ball
 
   bar <- findObject "bar" "barGroup"
   col5 <- objectsCollision ball bar
-  let (_,vy) = getGameObjectSpeed ball
+  let (vx,vy) = getGameObjectSpeed ball
   when (col5 && vy < 0) $ do
-    (x,y) <- getObjectSpeed ball
-    setObjectSpeed (x*1.2,-y*1.2) ball
+    setObjectSpeed (vx*1.2,-vy*1.2) ball
     let new_current = current + 10
     setGameAttribute (Score new_current (if new_current > high then new_current else high))
 
@@ -114,10 +112,10 @@ gameMap = textureMap 0 200 200 w h -- el 0 hace referencia al primer elemento de
 -- FPS --
 ---------
 target_fps = 60 
-tick = 1000 `div` target_fps
+interval = 1000 `div` target_fps
 
 -------------------
 -- Juntando todo --
 -------------------
 main :: IO ()
-main = funInit winConfig gameMap [bar,ball] () initScore input gameCycle (Timer tick) bmpList
+main = funInit winConfig gameMap [bar,ball] () initScore input gameCycle (Timer interval) bmpList
